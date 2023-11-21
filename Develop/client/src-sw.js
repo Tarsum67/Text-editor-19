@@ -1,5 +1,5 @@
 const { offlineFallback, warmStrategyCache } = require('workbox-recipes');
-const { CacheFirst, StaleWhileRevalidate } = require('workbox-strategies');
+const { CacheFirst, StaleWhileRevalidate } = require('workbox-strategies');  // Import StaleWhileRevalidate
 const { registerRoute } = require('workbox-routing');
 const { CacheableResponsePlugin } = require('workbox-cacheable-response');
 const { ExpirationPlugin } = require('workbox-expiration');
@@ -24,34 +24,16 @@ warmStrategyCache({
   strategy: pageCache,
 });
 
-registerRoute(
-  // Cache CSS, JS, and images with a Stale While Revalidate strategy
-  ({ request }) =>
-    request.destination === 'style' ||
-    request.destination === 'script' ||
-    request.destination === 'image',
-  new StaleWhileRevalidate({
-    cacheName: 'assets-cache',
-    plugins: [
-      new CacheableResponsePlugin({
-        statuses: [0, 200],
-      }),
-    ],
-  })
-);
+registerRoute(({ request }) => request.mode === 'navigate', pageCache);
 
-// Implement asset caching for other resources here
-// Example: Cache fonts with a Cache First strategy
+// Implement asset caching
 registerRoute(
-  ({ request }) => request.destination === 'font',
-  new CacheFirst({
-    cacheName: 'fonts-cache',
+  ({ request }) => ['style', 'script', 'worker'].includes(request.destination),
+  new StaleWhileRevalidate({
+    cacheName: 'asset-cache',
     plugins: [
       new CacheableResponsePlugin({
         statuses: [0, 200],
-      }),
-      new ExpirationPlugin({
-        maxAgeSeconds: 365 * 24 * 60 * 60, // Cache for one year
       }),
     ],
   })
@@ -59,6 +41,3 @@ registerRoute(
 
 // Offline fallback strategy
 offlineFallback();
-
-// This is just a placeholder; you need to provide appropriate routes and strategies for your assets
-// For more details, refer to the Workbox documentation: https://developers.google.com/web/tools/workbox
